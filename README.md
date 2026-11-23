@@ -1,3 +1,38 @@
+# Reproduction: no-JS server action on a partially prerendered page returns a blank page
+
+Minimal reproduction for Next.js 16.4.6 with `cacheComponents: true` (the default in `create-next-app`).
+
+## Setup
+
+- `app/page.tsx`: a static shell plus one dynamic part (`await connection()` inside `<Suspense>`), so the route is **partially prerendered** (`◐ /` in the build output).
+- `app/form.tsx`: a client form using `useActionState`.
+- `app/actions.ts`: a server action that logs `ACTION RAN` and returns `{ count }`.
+
+## Steps
+
+1. `npm install`
+2. `npm run build` (the output shows `◐ /` = Partial Prerender)
+3. `npm run start`
+4. Open http://localhost:3000 in Chrome.
+5. Disable JavaScript: DevTools (F12) → `Ctrl+Shift+P` → "Disable JavaScript" → reload.
+6. Click **Submit**.
+
+## Current behavior
+
+- The server action runs (`ACTION RAN: test` is printed in the terminal).
+- The browser shows a **blank page**.
+- The POST response (`x-nextjs-cache: HIT`, `x-nextjs-prerender: 1`) contains only `<script>` tags with the RSC payload (including the action result `{"count":1}`); it has no `<html>`, `<body>` or prerendered markup.
+
+## Expected behavior
+
+With JavaScript disabled, the form should progressively enhance: after submitting, the page should render as full HTML showing `Action ran 1 times`.
+
+## Comparison
+
+With JavaScript enabled, the same form works: the action runs and the UI shows `Action ran 1 times`.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
